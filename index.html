@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="style.css" type="text/css" media="all">
+  <style>
+    .slot-tile {
+      object-view-box: inset(0px 0px 1000px 0px);
+      border: 2px solid #000;
+    }
+  </style>
+  <title>スロット:試作</title>
+</head>
+<body>
+  <input type="number" id="slot-number" value="3" min="2" step="1">
+  <button id="create-button" onclick="createSlot()">スロットを生成</button>
+
+  <div id="main-slot">
+    <img src="img.jpg" id="slot-0" class="slot-tile" onclick="stopSlot(0)">
+    <img src="img.jpg" id="slot-1" class="slot-tile" onclick="stopSlot(1)">
+    <img src="img.jpg" id="slot-2" class="slot-tile" onclick="stopSlot(2)">
+  </div>
+
+  <div>
+    <button id="play-button" onclick="startButton()">スタート</button>
+  </div>
+
+  <script>
+    const get = id => document.getElementById(id);
+
+    const playButton = get('play-button');
+    const createButton = get('create-button');
+    const slotNumber = get('slot-number');
+    const mainSlot = get('main-slot');
+
+    let len = Number(slotNumber.value);
+
+    let slot      = [...Array(len)].map((_, i) => get(`slot-${i}`));
+    let slotValue = Array(len).fill(0);
+    let roll      = Array(len).fill(null);
+    let isRolling = Array(len).fill(false);
+    let y         = Array(len).fill(0);
+    let speed     = [...Array(len)].map((_, i) => i+1);
+    let isPlaying = false;
+
+    function createSlot() {
+      console.log(isPlaying);
+      if (isPlaying) {
+        for (let i=0; i<len; i++) {
+          clearInterval(roll[i]);
+        }
+        playButton.disabled = false;
+        isPlaying = false;
+      }
+    
+      len = Number(slotNumber.value);
+    
+      let html = '';
+      for (let i=0; i<len; i++) {
+        html += `<img src="img.jpg" id="slot-${i}" class="img" onclick="stopSlot(${i})">`;
+      }
+      mainSlot.innerHTML = html;
+    
+      slot      = [...Array(len)].map((_, i) => get(`slot-${i}`));
+      slotValue = Array(len).fill(0);
+      roll      = Array(len).fill(null);
+      isRolling = Array(len+1).fill(false);
+      y         = Array(len).fill(0);
+      speed     = [...Array(len)].map((_, i) => i+1);
+    }
+    createSlot();
+
+    function startButton() {
+      playButton.disabled = true;
+      isPlaying = true;
+      for (let i=0; i<len; i++) {
+        startSlot(i);
+      }
+    }
+
+    function startSlot(el) {
+      isRolling[el] = true;
+    
+      roll[el] = setInterval(() => {
+        y[el] = (y[el] + speed[el]) % 1000;
+        slot[el].style.objectViewBox = `inset(${y[el]}px 0px ${1000 - y[el]}px 0px)`;
+      }, 1);
+    }
+
+    function stopSlot(el) {
+      if (isPlaying && (el == 0 || (el > 0 && !isRolling[el-1]))) {
+
+        clearInterval(roll[el]);
+        roll[el] = setInterval(() => {
+          y[el] = (y[el] + 1) % 1000;
+          slot[el].style.objectViewBox = `inset(${y[el]}px 0px ${1000 - y[el]}px 0px)`;
+        
+          if (y[el]%100 == 0) {
+            isRolling[el] = false;
+            slotValue[el] = (y[el]/100)%10;
+            clearInterval(roll[el]);
+            if(el == len-1) {
+              playButton.disabled = false;
+              isPlaying = false;
+            }
+          }
+        }, 10)
+      }
+    }
+  </script>
+</body>
+</html>
