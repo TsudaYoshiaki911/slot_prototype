@@ -5,14 +5,14 @@
   <link rel="stylesheet" href="style.css" type="text/css" media="all">
   <style>
     .slot-tile {
-      object-view-box: inset(0px 0px 1000px 0px);
       border: 2px solid #000;
+      object-view-box: inset(0px 0px 1000px 0px);
     }
   </style>
   <title>スロット:試作</title>
 </head>
 <body>
-  <input type="number" id="slot-number" value="3" min="2" step="1">
+  <input type="number" id="slot-number" value="3" min="1" step="1">
   <button id="create-button" onclick="createSlot()">スロットを生成</button>
 
   <div id="main-slot">
@@ -35,16 +35,9 @@
 
     let len = Number(slotNumber.value);
 
-    let slot      = [...Array(len)].map((_, i) => get(`slot-${i}`));
-    let slotValue = Array(len).fill(0);
-    let roll      = Array(len).fill(null);
-    let isRolling = Array(len).fill(false);
-    let y         = Array(len).fill(0);
-    let speed     = [...Array(len)].map((_, i) => i+1);
     let isPlaying = false;
 
     function createSlot() {
-      console.log(isPlaying);
       if (isPlaying) {
         for (let i=0; i<len; i++) {
           clearInterval(roll[i]);
@@ -57,14 +50,14 @@
     
       let html = '';
       for (let i=0; i<len; i++) {
-        html += `<img src="img.jpg" id="slot-${i}" class="img" onclick="stopSlot(${i})">`;
+        html += `<img src="img.jpg" id="slot-${i}" class="slot-tile" onclick="stopSlot(${i})">`;
       }
       mainSlot.innerHTML = html;
     
       slot      = [...Array(len)].map((_, i) => get(`slot-${i}`));
       slotValue = Array(len).fill(0);
       roll      = Array(len).fill(null);
-      isRolling = Array(len+1).fill(false);
+      isRolling = Array(len).fill(false);
       y         = Array(len).fill(0);
       speed     = [...Array(len)].map((_, i) => i+1);
     }
@@ -88,7 +81,8 @@
     }
 
     function stopSlot(el) {
-      if (isPlaying && (el == 0 || (el > 0 && !isRolling[el-1]))) {
+      console.log(isRolling);
+      if (isPlaying  && isRolling[el] && (el == 0 || (el > 0 && !isRolling[el-1]))) {
 
         clearInterval(roll[el]);
         roll[el] = setInterval(() => {
