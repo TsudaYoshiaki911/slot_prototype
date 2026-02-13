@@ -16,89 +16,104 @@
   <button id="create-button" onclick="createSlot()">スロットを生成</button>
 
   <div id="main-slot">
-    <img src="img.jpg" id="slot-0" class="slot-tile" onclick="stopSlot(0)">
-    <img src="img.jpg" id="slot-1" class="slot-tile" onclick="stopSlot(1)">
-    <img src="img.jpg" id="slot-2" class="slot-tile" onclick="stopSlot(2)">
+    <img src="img.jpg" id="slot-0" class="slot-tile" onclick="stopTile(0)">
+    <img src="img.jpg" id="slot-1" class="slot-tile" onclick="stopTile(1)">
+    <img src="img.jpg" id="slot-2" class="slot-tile" onclick="stopTile(2)">
   </div>
 
   <div>
-    <button id="play-button" onclick="startButton()">スタート</button>
+    <button id="play-button" onclick="startSlot()">スタート</button>
+    <p>結果: <span id="result"></span></p>
   </div>
 
   <script>
-    const get = id => document.getElementById(id);
+    const get = id => document.getElementById(id);  //htmlのidを渡してjsでいじれるようにする
 
-    const playButton = get('play-button');
+    const slotNumber   = get('slot-number');
     const createButton = get('create-button');
-    const slotNumber = get('slot-number');
-    const mainSlot = get('main-slot');
+    const mainSlot     = get('main-slot');
+    const playButton   = get('play-button');
+    const result       = get('result');
 
-    let len = Number(slotNumber.value);
+    let len = Number(slotNumber.value);  //スロットの長さ
 
-    let isPlaying = false;
+    let isPlaying = false;  //スロット全体が動いているか
 
+    //可変長のスロットを作成
     function createSlot() {
+      //スロットが動いてたら止める
       if (isPlaying) {
         for (let i=0; i<len; i++) {
           clearInterval(roll[i]);
         }
-        playButton.disabled = false;
+        playButton.disabled = false;  //スタートボタンを活性化
         isPlaying = false;
       }
     
-      len = Number(slotNumber.value);
+      len = Number(slotNumber.value);  //スロットの長さ
     
-      let html = '';
+      let html = '';  //スロット部分を作成
       for (let i=0; i<len; i++) {
-        html += `<img src="img.jpg" id="slot-${i}" class="slot-tile" onclick="stopSlot(${i})">`;
+        html += `<img src="img.jpg" id="slot-${i}" class="slot-tile" onclick="stopTile(${i})">`;
       }
-      mainSlot.innerHTML = html;
+      mainSlot.innerHTML = html;  //htmlに反映
     
-      slot      = [...Array(len)].map((_, i) => get(`slot-${i}`));
-      slotValue = Array(len).fill(0);
-      roll      = Array(len).fill(null);
-      isRolling = Array(len).fill(false);
-      y         = Array(len).fill(0);
-      speed     = [...Array(len)].map((_, i) => i+1);
+      //スロットの各タイルを配列に保存
+      slot      = [...Array(len)].map((_, i) => get(`slot-${i}`));  //タイルをhtmlのidから取得
+      slotValue = Array(len).fill(0);                  //タイルの値(初期値はすべて0)
+      roll      = Array(len).fill(null);               //タイルの動きを保存(setIntervalで必要)
+      isRolling = Array(len).fill(false);              //タイルが回っているか
+      y         = Array(len).fill(0);                  //タイルの表示部分のy座標
+      speed     = [...Array(len)].map((_, i) => i+1);  //タイルの動く速度(初期値は1,2,3,.../i+1を変えて調節)
     }
-    createSlot();
+    createSlot();  //最初の1回分を作成する(長さ3)
 
-    function startButton() {
-      playButton.disabled = true;
+    //スロットを動かす
+    function startSlot() {
+      playButton.disabled = true;  //スタートボタンを非活性化
       isPlaying = true;
+
+      //各タイルを動かす
       for (let i=0; i<len; i++) {
-        startSlot(i);
+        isRolling[i] = true;
+
+        //各タイルを毎1ms動かす
+        roll[i] = setInterval(() => {
+          y[i] = (y[i] + speed[i]) % 1000;  //タイルのy座標を+speed分ずらして1000以上は戻す
+          slot[i].style.objectViewBox = `inset(${y[i]}px 0px ${1000 - y[i]}px 0px)`;
+          //タイルのトリミング設定(元画像:縦1100px横100px => 縦横100px) => inset(開始位置y(上から) 開始位置x(右から) 終了位置y(下から) 終了位置x(左から))
+        }, 1);  // <= 毎1ms
       }
     }
 
-    function startSlot(el) {
-      isRolling[el] = true;
-    
-      roll[el] = setInterval(() => {
-        y[el] = (y[el] + speed[el]) % 1000;
-        slot[el].style.objectViewBox = `inset(${y[el]}px 0px ${1000 - y[el]}px 0px)`;
-      }, 1);
-    }
-
-    function stopSlot(el) {
-      console.log(isRolling);
+    //タイルを止める(タイルのクリックで発動)
+    function stopTile(el) {
+      //動いている & 自身(タイル)が動いている & (自身が最初 or 1個前のタイルが動いている)
       if (isPlaying  && isRolling[el] && (el == 0 || (el > 0 && !isRolling[el-1]))) {
 
-        clearInterval(roll[el]);
-        roll[el] = setInterval(() => {
+        clearInterval(roll[el]);  //自身を止める
+        
+        //タイルの余韻アニメーション
+        roll[el] = setInterval(() => {  //タイルを毎10ms動かす
+          //動かし方は同じ
           y[el] = (y[el] + 1) % 1000;
           slot[el].style.objectViewBox = `inset(${y[el]}px 0px ${1000 - y[el]}px 0px)`;
         
+          //タイルの位置が1つ分ぴったりになったとき、
           if (y[el]%100 == 0) {
+            clearInterval(roll[el]);         //余韻アニメーションを止める
+            slotValue[el] = (y[el]/100)%10;  //タイルの値を保存(座標を1/100,0は10と表示されるので10の余剰として処理)
             isRolling[el] = false;
-            slotValue[el] = (y[el]/100)%10;
-            clearInterval(roll[el]);
+            
+            //最後のタイルを止めたとき、
             if(el == len-1) {
-              playButton.disabled = false;
+              playButton.disabled = false;  //スタートボタンを活性化
               isPlaying = false;
+
+              result.innerText = `${slotValue.join(',')}`;  //スロットの結果を表示
             }
           }
-        }, 10)
+        }, 10)  // <=毎10ms
       }
     }
   </script>
